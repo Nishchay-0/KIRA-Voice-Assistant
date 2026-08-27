@@ -7,8 +7,11 @@ from typing import Optional
 class KiraTTS:
     """Speak text using pyttsx3 when available, or print it as a fallback."""
 
-    def __init__(self, voice: Optional[str] = None, rate: Optional[int] = None):
+    def __init__(self, voice: Optional[str] = None, rate: Optional[int] = None,
+                 engine: Optional[str] = None, language: Optional[str] = None,
+                 voice_gender: Optional[str] = None, voice_id: Optional[str] = None):
         self.voice = voice or "en-IN-NeerjaNeural"
+        self.voice_id = voice_id or self.voice
         self.rate = rate or 170
         self._engine = None
         try:

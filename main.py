@@ -29,6 +29,7 @@ from os_automation import execute_os_command
 from web_automation import execute_web_command, WEB_SERVICES, normalize_hinglish_command
 from youtube_engine import play_youtube_media, YouTubeEngine
 from smart_calculator import execute_smart_calculation
+from dependency_fixer import repair_plan_json
 
 
 def print_banner():
@@ -92,6 +93,12 @@ def process_user_input(original_text: str, hinglish_text: str, english_text: str
     combined_text = f"{clean_raw} {clean_hinglish} {clean_english}".strip()
 
     print(Fore.CYAN + f"\n[User Spoken Voice]: {raw_text}")
+
+    if any(k in combined_text for k in ["fix environment", "install everything", "dependency fix", "repair dependencies"]):
+        repair_json = repair_plan_json(request=combined_text)
+        print(Fore.YELLOW + repair_json)
+        tts.speak_auto("I generated a dependency repair plan. See the terminal for commands.", wait=True)
+        return False
 
     # 1. Try Multi-Platform OS Automation Execution (open/close camera, take photo, settings, calculator, etc.)
     is_os, os_msg = execute_os_command(clean_raw)

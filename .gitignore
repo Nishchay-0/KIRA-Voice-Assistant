@@ -1,0 +1,22 @@
+# Virtual Environment & Python Caches
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Personal Private Information & Sensitive Folders (DO NOT PUSH TO GITHUB)
+.agents/
+private_personal/
+reports/
+voice_config.json
+edge_voices.json
+audio_cache/
+
+# Audio Files & Logs
+speech.mp3
+*.log
+*.png
+*.jpg
+*.jpeg
+*.mp3
+*.wav

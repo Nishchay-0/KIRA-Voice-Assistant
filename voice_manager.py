@@ -10,7 +10,7 @@ import os
 import json
 import asyncio
 import logging
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Tuple, Any, Callable
 
 from colorama import Fore, Style, init
 

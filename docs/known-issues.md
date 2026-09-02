@@ -27,3 +27,11 @@ This document tracks identified bugs, reproduction steps, confirmed fixes, and o
 - **Status:** FIXED
 - **Symptom:** `pip install PyAudio` fails due to missing `portaudio.h`.
 - **Confirmed Fix:** Included `portaudio19-dev` and `python3-pyaudio` system dependencies in `Dockerfile` and updated `dependency_fixer.py` to recognize `docker-linux` and provide `apt-get` commands.
+
+---
+
+### 4. Missing `Tuple` Typing Import in `voice_manager.py`
+- **Status:** FIXED
+- **Symptom:** `NameError: name 'Tuple' is not defined` when initializing `VoiceManager` during `main.py` startup.
+- **Reproduction:** Running `python main.py` or `import voice_manager`.
+- **Confirmed Fix:** Added `Tuple, Any, Callable` to typing imports in `voice_manager.py`. All modules now import with 100% pass rate.

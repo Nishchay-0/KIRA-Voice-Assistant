@@ -13,8 +13,10 @@ Features:
 
 import sys
 import os
+import re
 import time
 import platform
+import webbrowser
 from typing import Optional
 from colorama import Fore, Style, init
 
@@ -126,7 +128,34 @@ def process_user_input(original_text: str, hinglish_text: str, english_text: str
         tts.speak_auto(calc_msg, wait=True)
         return False
 
-    # 2. Classified Intent Routing (System, Play Media, Voice Settings)
+    # 2. Hinglish / fuzzy play detection BEFORE IntentClassifier
+    # Catches: "ple songs", "ple myoojik", "chala do", "bajao", "play", "nyoo pnjabee songs ple kro"
+    PLAY_TRIGGERS = [
+        "play", "ple ", "chala", "bajao", "gana", "song", "music", "gaana",
+        "natak", "sunao", "suno", "stream"
+    ]
+    all_texts = [clean_raw, clean_hinglish, clean_english]
+    play_text = None
+    for t in all_texts:
+        if any(p in t for p in PLAY_TRIGGERS):
+            play_text = t
+            break
+
+    if play_text:
+        import re as _re
+        # Extract the song query — strip the trigger word
+        song_query = _re.sub(
+            r"^(?:play|ple|chala|bajao|sunao|suno|gana|gaana|natak|stream|music|song[s]?)\s*",
+            "",
+            play_text,
+            flags=_re.IGNORECASE
+        ).strip() or play_text
+        print(Fore.GREEN + f"[Media Playback]: Playing '{song_query}' on YouTube...")
+        msg = play_youtube_media(song_query)
+        tts.speak_auto(msg, wait=True)
+        return False
+
+    # 3. Classified Intent Routing (System, Voice Settings, Open Web, Search)
     classified = IntentClassifier.classify(clean_raw)
     if classified["intent"] == "unknown" and clean_hinglish:
         classified = IntentClassifier.classify(clean_hinglish)
@@ -139,13 +168,6 @@ def process_user_input(original_text: str, hinglish_text: str, english_text: str
         tts.speak_auto(msg, wait=True)
         return True
 
-    if classified["intent"] == "play_media":
-        song_query = classified.get("query") or clean_raw
-        print(Fore.GREEN + f"[Media Playback]: Playing '{song_query}' on YouTube...")
-        msg = play_youtube_media(song_query)
-        tts.speak_auto(msg, wait=True)
-        return False
-
     if classified["intent"] == "voice_settings":
         if any(k in combined_text for k in ["keyword", "wake word", "password"]):
             set_private_wake_keyword_menu()
@@ -155,7 +177,25 @@ def process_user_input(original_text: str, hinglish_text: str, english_text: str
             vm.interactive_menu()
         return False
 
-    # 3. Try Intelligent Fuzzy Web & Media Execution (open ytb, go to you tube, open goggle, fb, etc.)
+    if classified["intent"] in ("open_web", "search"):
+        svc = classified.get("service") or ""
+        query = classified.get("query") or ""
+        from urllib.parse import quote_plus
+        from web_automation import WEB_SERVICES, SEARCH_TEMPLATES
+        if svc and svc in WEB_SERVICES:
+            if query:
+                base = SEARCH_TEMPLATES.get(svc, WEB_SERVICES[svc] + "/search?q=")
+                url = base + quote_plus(query)
+                webbrowser.open(url)
+                web_msg = f"Searching {svc} for '{query}'."
+            else:
+                webbrowser.open(WEB_SERVICES[svc])
+                web_msg = f"Opened {svc}."
+            print(Fore.GREEN + f"[Media/Web Action Executed]: {web_msg}")
+            tts.speak_auto(web_msg, wait=True)
+            return False
+
+    # 4. Fuzzy Web Execution fallback
     is_web, web_msg = execute_web_command(clean_raw)
     if not is_web and clean_hinglish:
         is_web, web_msg = execute_web_command(clean_hinglish)
@@ -167,10 +207,9 @@ def process_user_input(original_text: str, hinglish_text: str, english_text: str
         tts.speak_auto(web_msg, wait=True)
         return False
 
-    # 4. Check Persistent Memory & Teaching triggers
+    # 5. Persistent Memory & Teaching Triggers
     brain = get_brain()
 
-    # Check if user is teaching Kira their name or preferences
     if any(k in clean_raw for k in ["my name is ", "mera naam ", "call me "]):
         import re
         name_match = re.search(r"(?:my name is|mera naam|call me)\s+([a-zA-Z0-9_-]+)", clean_raw, re.IGNORECASE)
@@ -182,7 +221,6 @@ def process_user_input(original_text: str, hinglish_text: str, english_text: str
             tts.speak_auto(msg, wait=True)
             return False
 
-    # Check if user is teaching Kira a new custom Q&A fact
     if "remember that" in clean_raw or "teach" in clean_raw:
         import re
         teach_match = re.search(r"(?:remember that|teach(?: you)? that|remember)\s+(.+?)\s+(?:is|means|hoga)\s+(.+)", clean_raw, re.IGNORECASE)
@@ -195,7 +233,7 @@ def process_user_input(original_text: str, hinglish_text: str, english_text: str
             tts.speak_auto(msg, wait=True)
             return False
 
-    # 4b. Query Knowledge Base from SQLite Memory
+    # 5b. Knowledge Base Lookup
     knowledge_result = brain.understand(clean_raw)
     if knowledge_result["intent"] == "knowledge" and knowledge_result.get("response"):
         resp = knowledge_result["response"]
@@ -203,11 +241,12 @@ def process_user_input(original_text: str, hinglish_text: str, english_text: str
         tts.speak_auto(resp, wait=True)
         return False
 
-    # 5. Conversational Responses, Name Personalization & Local LLM Integration
+    # 6. Conversational Responses with Name Personalization
     stored_name = brain.memory.get_user_preference("name")
     salutation = f", {stored_name}" if stored_name else " Sir"
 
-    if any(k in combined_text for k in ["hello", "namaste", "hi", "नमस्ते"]):
+    GREET_TRIGGERS = ["hello", "namaste", "hi", "नमस्ते", "hlo", "helo", "hlw", "hey", "hii", "hellow"]
+    if any(k in combined_text for k in GREET_TRIGGERS):
         response = f"Namaste{salutation}! Main Kira hoon. Aap bataiye main aapki kya help kar sakti hoon?"
     elif any(k in combined_text for k in ["who are you", "kaun ho", "कौन"]):
         response = "Main Kira hoon, aapki AI voice assistant."
@@ -215,18 +254,19 @@ def process_user_input(original_text: str, hinglish_text: str, english_text: str
         if stored_name:
             response = f"Aapka naam {stored_name} hai."
         else:
-            response = "Aapne mujhe apna naam nahi bataya. Aap 'my name is [name]' bolkar mujhe sikha sakte hain."
+            response = "Aapne mujhe apna naam nahi bataya. 'My name is [name]' bolkar mujhe bata sakte hain."
     elif any(k in combined_text for k in ["time", "samay", "waqt", "समय"]):
         current_time = time.strftime("%I:%M %p")
         response = f"Abhi time ho raha hai {current_time}."
     elif any(k in combined_text for k in ["weather", "mausam", "मौसम"]):
         response = "Aaj ka mausam saaf hai."
     else:
+        # Try Local LLM (Ollama) if available
         llm_reply = ask_local_llm(raw_text)
         if llm_reply:
             response = llm_reply
         else:
-            response = f"Aapne kaha: '{raw_text}'."
+            response = f"Mujhe samajh nahi aaya{salutation}. Kya aap phir se bol sakte hain?"
 
     print(Fore.GREEN + f"[Kira Response]: {response}")
     tts.speak_auto(response, wait=True)

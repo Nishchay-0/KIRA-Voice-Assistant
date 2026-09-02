@@ -34,6 +34,7 @@ from smart_calculator import execute_smart_calculation
 from dependency_fixer import repair_plan_json
 from intent_classifier import IntentClassifier
 from kira_intelligence import get_brain, ask_local_llm
+from kira_learner import get_learner
 
 
 def print_banner():
@@ -97,6 +98,37 @@ def process_user_input(original_text: str, hinglish_text: str, english_text: str
     combined_text = f"{clean_raw} {clean_hinglish} {clean_english}".strip()
 
     print(Fore.CYAN + f"\n[User Spoken Voice]: {raw_text}")
+
+    # 0. Check Learned Mappings (Pillar 4 - Feedback Loop auto-remapping)
+    learner = get_learner()
+    learned_intent = learner.check_learned_mapping(clean_raw)
+    if learned_intent:
+        print(Fore.MAGENTA + f"[BRAIN Learned]: '{clean_raw}' -> '{learned_intent}'")
+        # Re-run with the learned equivalent intent directly
+        if learned_intent == "play_media":
+            msg = play_youtube_media(clean_raw)
+            tts.speak_auto(msg, wait=True)
+            learner.process_interaction(clean_raw, msg, "play_media")
+            return False
+        elif learned_intent in ("open_web", "search"):
+            is_web, web_msg = execute_web_command(clean_raw)
+            if is_web:
+                tts.speak_auto(web_msg, wait=True)
+                learner.process_interaction(clean_raw, web_msg, learned_intent)
+                return False
+
+    # 0b. Correction handler: "no you meant X" / "kira correct this to X"
+    correction_pattern = re.search(
+        r"(?:no|wrong|correct|that should be|i meant|kira correct).*?(?:to|is|means|hona chahiye)\s+(.+)",
+        clean_raw, re.IGNORECASE
+    )
+    if correction_pattern:
+        correct_intent = correction_pattern.group(1).strip()
+        learner.handle_correction(clean_raw, "unknown", correct_intent)
+        msg = f"Got it{', ' + learner.recall('name') if learner.recall('name') else ''}! I will learn from this correction."
+        print(Fore.MAGENTA + f"[BRAIN Correction Logged]: '{clean_raw}' -> '{correct_intent}'")
+        tts.speak_auto(msg, wait=True)
+        return False
 
     if any(k in combined_text for k in ["fix environment", "install everything", "dependency fix", "repair dependencies"]):
         repair_json = repair_plan_json(request=combined_text)
@@ -270,6 +302,14 @@ def process_user_input(original_text: str, hinglish_text: str, english_text: str
 
     print(Fore.GREEN + f"[Kira Response]: {response}")
     tts.speak_auto(response, wait=True)
+
+    # Log interaction for continuous learning
+    classified_intent = classified.get("intent", "conversational") if 'classified' in dir() else "conversational"
+    proactive = learner.process_interaction(clean_raw, response, classified_intent)
+    if proactive:
+        print(Fore.MAGENTA + f"[KIRA Suggests]: {proactive}")
+        tts.speak_auto(proactive, wait=True)
+
     return False
 
 

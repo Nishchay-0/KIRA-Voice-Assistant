@@ -27,3 +27,11 @@ speech.mp3
 *.mp3
 *.wav
 *_Error.txt
+
+# Learning Engine & Memory Databases (user data — never push)
+kira_brain.db
+kira_memory.db
+learned_mappings.json
+training_data.csv
+chroma_db/
+chroma_brain/

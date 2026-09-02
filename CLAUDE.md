@@ -31,10 +31,13 @@
 | `smart_calculator.py` | AST-based safe mathematical expression evaluator | `execute_smart_calculation()` |
 | `os_automation.py` | Cross-platform OS application & settings controls | `execute_os_command()` |
 | `youtube_engine.py` | Smart media & music streaming engine | `play_youtube_media()`, `YouTubeEngine` |
-| `intent_classifier.py` | Intelligent intent parsing, entity resolution & confidence scoring | `IntentClassifier.classify()`, `IntentClassifier.resolve_service()` |
-| `kira_intelligence.py` | Persistent SQLite memory, Q&A knowledge base, semantic search & local LLM | `KiraBrain`, `KiraMemory`, `KiraSemantic`, `get_brain()`, `ask_local_llm()` |
-| `kira_memory.db` | SQLite file: `users`, `history`, `knowledge` tables — auto-created on first run | N/A |
-| `chroma_db/` | ChromaDB vector index — auto-created when `chromadb` is installed (optional) | N/A |
+| `kira_intelligence.py` | Persistent SQLite memory, Q&A knowledge base, semantic search & local LLM | `KiraBrain`, `KiraMemory`, `get_brain()`, `ask_local_llm()` |
+| `learning_engine.py` | 4-Pillar Learning Engine: StructuredMemory, SemanticMemory, PatternLearner | `StructuredMemory`, `SemanticMemory`, `PatternLearner` |
+| `kira_learner.py` | Learning Orchestrator: feedback loop, corrections, auto-remapping, training export | `KiraLearner`, `get_learner()` |
+| `kira_memory.db` | SQLite (kira_intelligence): `users`, `history`, `knowledge` tables | Auto-created |
+| `kira_brain.db` | SQLite (learning_engine): `user_profile`, `command_stats`, `corrections` tables | Auto-created |
+| `learned_mappings.json` | Auto-generated intent corrections from feedback loop | Auto-created after 3 corrections |
+| `chroma_db/` / `chroma_brain/` | ChromaDB vector indexes (optional, requires `chromadb`) | Auto-created |
 | `dependency_fixer.py` | Platform- & Docker-aware dependency diagnostics | `repair_plan()`, `repair_plan_json()`, `_is_docker()` |
 | `Dockerfile` | Multi-platform container definition with full audio stack | `python:3.11-slim`, ALSA, PortAudio, PulseAudio, espeak-ng |
 | `docker-compose.yml` | Container orchestration (`kira`, `kira-cli`, `kira-test`) | Live audio pass-through, text-interactive CLI, persistent volume caching |

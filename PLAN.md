@@ -14,7 +14,8 @@ Implement and maintain the self-enforcing, enterprise-grade working agreement, p
 | **AST Smart Calculator** | Safe mathematical expression parser & calculator with zero eval security risk. | 2026-08-27 |
 | **Docker Environment Adaptation** | Multi-platform Dockerfile, Docker Compose (`kira`, `kira-cli`, `kira-test`), ALSA/Pulse audio pass-through, and PowerShell/Bash runners. | `a0b7792` (2026-09-02) |
 | **Persistent Memory & Super Prompt** | Created `CLAUDE.md`, `PLAN.md`, `docs/known-issues.md`, `docs/constraints.md`, and `.env.example`. | `d538ace` (2026-09-02) |
-| **Intelligent Intent & Fuzzy Matching** | Created `intent_classifier.py`, fuzzy typo-tolerant `web_automation.py`, and neural Edge-TTS playback. | Active (2026-09-03) |
+| **Intelligent Intent & Fuzzy Matching** | Created `intent_classifier.py`, fuzzy typo-tolerant `web_automation.py`, and neural Edge-TTS playback. | `3eabf36` (2026-09-03) |
+| **Continuous Learning Engine (4 Pillars)** | Created `learning_engine.py` (StructuredMemory, SemanticMemory, PatternLearner) & `kira_learner.py` (Feedback Loop, Auto-Remapping, Proactive Suggestions). | Active (2026-09-03) |
 
 ---
 

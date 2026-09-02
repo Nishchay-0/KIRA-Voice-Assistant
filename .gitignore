@@ -12,6 +12,12 @@ voice_config.json
 edge_voices.json
 audio_cache/
 
+# Secrets & Environment Configurations
+.env
+*.env
+.env.*
+!.env.example
+
 # Audio Files & Logs
 speech.mp3
 *.log
@@ -20,3 +26,4 @@ speech.mp3
 *.jpeg
 *.mp3
 *.wav
+*_Error.txt

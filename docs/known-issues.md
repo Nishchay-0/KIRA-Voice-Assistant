@@ -1,0 +1,29 @@
+# Known Issues & Bug Tracking
+
+This document tracks identified bugs, reproduction steps, confirmed fixes, and ongoing anomalies.
+
+---
+
+## 🪲 Tracked Issues & Fixes
+
+### 1. Missing Microphones in Headless / Container Environments
+- **Status:** FIXED / MITIGATED
+- **Symptom:** `PyAudio` throws `IOError: No Default Input Device Available` or `ALSA lib pcm.c: unable to open slave` when running in Docker or without a connected sound card.
+- **Reproduction:** Run `python main.py` inside a container without passing `/dev/snd`.
+- **Confirmed Fix:** `speech_to_text.py` catches device initialization errors and automatically degrades gracefully to interactive typed CLI input (`[KiraSTT] Switching to typed commands`).
+- **Container Solution:** Added `kira-cli` service in `docker-compose.yml` for instant text-based interaction without audio hardware.
+
+---
+
+### 2. OneDrive Download `_Error.txt` Artifacts
+- **Status:** FIXED / CLEANED UP
+- **Symptom:** Stray `*_Error.txt` files created during historical cloud drive synchronization interfered with git geometric repacks.
+- **Reproduction:** `git commit` producing `fatal: bad object refs/heads_Error.txt`.
+- **Confirmed Fix:** Removed stray `.git/*_Error.txt` files and added `*_Error.txt` to `.dockerignore` and `.gitignore`.
+
+---
+
+### 3. PyAudio Installation on Linux / Docker
+- **Status:** FIXED
+- **Symptom:** `pip install PyAudio` fails due to missing `portaudio.h`.
+- **Confirmed Fix:** Included `portaudio19-dev` and `python3-pyaudio` system dependencies in `Dockerfile` and updated `dependency_fixer.py` to recognize `docker-linux` and provide `apt-get` commands.

@@ -17,6 +17,16 @@ import re
 import time
 import platform
 import webbrowser
+# Ensure UTF-8 stdout and stderr encoding across Windows terminals
+if sys.platform == "win32":
+    try:
+        if sys.stdout and hasattr(sys.stdout, "reconfigure"):
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        if sys.stderr and hasattr(sys.stderr, "reconfigure"):
+            sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 from typing import Optional
 from colorama import Fore, Style, init
 
@@ -35,6 +45,18 @@ from dependency_fixer import repair_plan_json
 from intent_classifier import IntentClassifier
 from kira_intelligence import get_brain, ask_local_llm
 from kira_learner import get_learner
+
+
+def safe_print(text: str, color_prefix: str = ""):
+    """Safely print text handling Windows console charmap limitations gracefully."""
+    try:
+        print(f"{color_prefix}{text}")
+    except (UnicodeEncodeError, Exception):
+        try:
+            ascii_text = text.encode("ascii", errors="replace").decode("ascii")
+            print(f"{color_prefix}{ascii_text}")
+        except Exception:
+            pass
 
 
 def print_banner():
@@ -97,7 +119,7 @@ def process_user_input(original_text: str, hinglish_text: str, english_text: str
     clean_english = (english_text or "").lower().strip()
     combined_text = f"{clean_raw} {clean_hinglish} {clean_english}".strip()
 
-    print(Fore.CYAN + f"\n[User Spoken Voice]: {raw_text}")
+    safe_print(f"\n[User Spoken Voice]: {raw_text}", Fore.CYAN)
 
     # 0. Check Learned Mappings (Pillar 4 - Feedback Loop auto-remapping)
     learner = get_learner()
@@ -174,13 +196,12 @@ def process_user_input(original_text: str, hinglish_text: str, english_text: str
             break
 
     if play_text:
-        import re as _re
         # Extract the song query — strip the trigger word
-        song_query = _re.sub(
+        song_query = re.sub(
             r"^(?:play|ple|chala|bajao|sunao|suno|gana|gaana|natak|stream|music|song[s]?)\s*",
             "",
             play_text,
-            flags=_re.IGNORECASE
+            flags=re.IGNORECASE
         ).strip() or play_text
         print(Fore.GREEN + f"[Media Playback]: Playing '{song_query}' on YouTube...")
         msg = play_youtube_media(song_query)
@@ -243,7 +264,6 @@ def process_user_input(original_text: str, hinglish_text: str, english_text: str
     brain = get_brain()
 
     if any(k in clean_raw for k in ["my name is ", "mera naam ", "call me "]):
-        import re
         name_match = re.search(r"(?:my name is|mera naam|call me)\s+([a-zA-Z0-9_-]+)", clean_raw, re.IGNORECASE)
         if name_match:
             user_name = name_match.group(1).strip().capitalize()
@@ -254,7 +274,6 @@ def process_user_input(original_text: str, hinglish_text: str, english_text: str
             return False
 
     if "remember that" in clean_raw or "teach" in clean_raw:
-        import re
         teach_match = re.search(r"(?:remember that|teach(?: you)? that|remember)\s+(.+?)\s+(?:is|means|hoga)\s+(.+)", clean_raw, re.IGNORECASE)
         if teach_match:
             fact_q = teach_match.group(1).strip()
@@ -300,7 +319,7 @@ def process_user_input(original_text: str, hinglish_text: str, english_text: str
         else:
             response = f"Mujhe samajh nahi aaya{salutation}. Kya aap phir se bol sakte hain?"
 
-    print(Fore.GREEN + f"[Kira Response]: {response}")
+    safe_print(f"[Kira Response]: {response}", Fore.GREEN)
     tts.speak_auto(response, wait=True)
 
     # Log interaction for continuous learning

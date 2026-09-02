@@ -17,6 +17,15 @@ import platform
 import logging
 from typing import Optional, Callable, Dict
 
+if sys.platform == "win32":
+    try:
+        if sys.stdout and hasattr(sys.stdout, "reconfigure"):
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        if sys.stderr and hasattr(sys.stderr, "reconfigure"):
+            sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 # Configure platform-independent PyAudio loading
 def _setup_pyaudio():
     """
@@ -411,11 +420,17 @@ class KiraSTT:
                             hinglish_text = devanagari_to_hinglish(recognized_text)
                             translated_english = translate_to_english(recognized_text)
                             
-                            print("\r" + Fore.CYAN + f"[Spoken Voice]: {recognized_text}")
-                            if hinglish_text != recognized_text:
-                                print(Fore.LIGHTYELLOW_EX + f"[Hinglish]: {hinglish_text}")
+                            try:
+                                print("\r" + Fore.CYAN + f"[Spoken Voice]: {recognized_text}")
+                                if hinglish_text != recognized_text:
+                                    print(Fore.LIGHTYELLOW_EX + f"[Hinglish]: {hinglish_text}")
+                            except Exception:
+                                pass
                             
-                            callback(recognized_text, hinglish_text, translated_english)
+                            try:
+                                callback(recognized_text, hinglish_text, translated_english)
+                            except Exception as cb_err:
+                                print(Fore.RED + f"[Kira] Command execution error: {cb_err}")
                             
                     except (sr.WaitTimeoutError, sr.UnknownValueError):
                         pass

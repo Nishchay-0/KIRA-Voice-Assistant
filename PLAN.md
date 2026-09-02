@@ -19,25 +19,29 @@ Implement and maintain the self-enforcing, enterprise-grade working agreement, p
 ---
 
 ## 🚧 Current Task in Progress
-- **Setup & Enforcement of Enterprise Super Prompt Agreement**:
-  - Establishing persistent memory files (`CLAUDE.md`, `PLAN.md`, `docs/known-issues.md`, `docs/constraints.md`, `.env.example`).
-  - Enforcing zero-PII leakage policy and automated git sync protocols across all sessions.
+- All major milestones complete. Repository is in a stable, fully-functional state.
+- Working tree is clean and synced with `origin/master`.
 
 ---
 
 ## 🔮 Planned Future Steps
-1. **Container Test Suite Expansion**: Expand pytest unit tests for containerized audio fallback verification.
-2. **WebSocket Audio Streaming API**: Optional remote web client integration for browser-based voice control.
-3. **Advanced Offline LLM Integration**: Add local Ollama/GGUF model provider support for conversational question answering.
+1. **Semantic Layer Activation**: Install `chromadb` + `sentence-transformers` to enable full embedding-based fuzzy command matching beyond the current difflib approach.
+2. **Ollama LLM Integration**: Install Ollama + pull `llama3.2:3b` to enable offline, open-ended conversational answers for any question KIRA doesn't know.
+3. **Container Test Suite Expansion**: Expand pytest unit tests covering `kira_intelligence.py` (memory CRUD, knowledge base seeding) and `intent_classifier.py` in Docker `kira-test`.
+4. **WebSocket Audio Streaming API**: Optional remote web client for browser-based voice control over WebSocket.
 
 ---
 
 ## 📝 Session Handoff Note
-- **Exact Changes Made**:
-  1. Built multi-platform Docker container environment with Dockerfile, docker-compose.yml, entrypoint script, and cross-platform runners (`run_docker.ps1`, `run_docker.sh`, `DOCKER.md`).
-  2. Created persistent memory architecture: `CLAUDE.md`, `PLAN.md`, `docs/known-issues.md`, `docs/constraints.md`, and `.env.example`.
-  3. Verified 0 syntax errors across all modules.
-- **Open Work**:
-  - None. Baseline environment and persistent memory fully operational and synced.
-- **Discovered Constraints**:
-  - Windows host audio pass-through to Docker containers requires either PulseAudio over TCP or WSLg socket forwarding; `kira-cli` is the zero-dependency fallback.
+- **Exact Changes Made (2026-09-03):**
+  1. Created `intent_classifier.py` — structured intent + fuzzy service resolution engine.
+  2. Rewrote `web_automation.py` — three-layer phonetic/alias/fuzzy dispatcher.
+  3. Created `kira_intelligence.py` — SQLite memory, Q&A knowledge base, optional ChromaDB + Ollama.
+  4. Updated `main.py` — full `KiraBrain` integration: name learning, Q&A teaching, LLM fallback, personalized greetings.
+  5. Updated `requirements.txt`, `CLAUDE.md`, `PLAN.md`, `docs/known-issues.md`.
+  6. Committed `3eabf36` and `a636132` to `origin/master`.
+- **Open Work:** None. All intelligence layers fully operational.
+- **Discovered Constraints:**
+  - ChromaDB/SentenceTransformers are optional — core features work without them.
+  - Ollama LLM requires host-level install — no pip dependency needed.
+  - `kira_memory.db` persists across sessions in the project root.

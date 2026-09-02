@@ -31,6 +31,10 @@
 | `smart_calculator.py` | AST-based safe mathematical expression evaluator | `execute_smart_calculation()` |
 | `os_automation.py` | Cross-platform OS application & settings controls | `execute_os_command()` |
 | `youtube_engine.py` | Smart media & music streaming engine | `play_youtube_media()`, `YouTubeEngine` |
+| `intent_classifier.py` | Intelligent intent parsing, entity resolution & confidence scoring | `IntentClassifier.classify()`, `IntentClassifier.resolve_service()` |
+| `kira_intelligence.py` | Persistent SQLite memory, Q&A knowledge base, semantic search & local LLM | `KiraBrain`, `KiraMemory`, `KiraSemantic`, `get_brain()`, `ask_local_llm()` |
+| `kira_memory.db` | SQLite file: `users`, `history`, `knowledge` tables — auto-created on first run | N/A |
+| `chroma_db/` | ChromaDB vector index — auto-created when `chromadb` is installed (optional) | N/A |
 | `dependency_fixer.py` | Platform- & Docker-aware dependency diagnostics | `repair_plan()`, `repair_plan_json()`, `_is_docker()` |
 | `Dockerfile` | Multi-platform container definition with full audio stack | `python:3.11-slim`, ALSA, PortAudio, PulseAudio, espeak-ng |
 | `docker-compose.yml` | Container orchestration (`kira`, `kira-cli`, `kira-test`) | Live audio pass-through, text-interactive CLI, persistent volume caching |
@@ -47,8 +51,14 @@ python main.py
 # Run Dependency Status Check
 python dependency_fixer.py --request "status"
 
-# Syntax Validation Check
-python -m py_compile main.py speech_to_text.py text_to_speech.py voice_manager.py web_automation.py smart_calculator.py os_automation.py dependency_fixer.py
+# Syntax Validation Check (all modules)
+python -m py_compile main.py speech_to_text.py text_to_speech.py voice_manager.py web_automation.py intent_classifier.py kira_intelligence.py smart_calculator.py os_automation.py dependency_fixer.py
+
+# Intelligence System Self-Test
+python kira_intelligence.py
+
+# Optional: Enable Semantic Layer
+# pip install chromadb sentence-transformers  (uncomment lines in requirements.txt first)
 ```
 
 ### Docker Environment

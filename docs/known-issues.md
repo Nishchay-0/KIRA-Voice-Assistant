@@ -35,3 +35,11 @@ This document tracks identified bugs, reproduction steps, confirmed fixes, and o
 - **Symptom:** `NameError: name 'Tuple' is not defined` when initializing `VoiceManager` during `main.py` startup.
 - **Reproduction:** Running `python main.py` or `import voice_manager`.
 - **Confirmed Fix:** Added `Tuple, Any, Callable` to typing imports in `voice_manager.py`. All modules now import with 100% pass rate.
+
+---
+
+### 5. Cross-Platform OS Automation & Windows WASAPI Audio Support
+- **Status:** FIXED
+- **Symptom:** OS commands only supported Windows `calc.exe` without macOS/Linux fallbacks; Windows WASAPI audio lacked dedicated `pyaudiowpatch` requirements declaration.
+- **Reproduction:** Running OS commands on Linux/macOS or initializing WASAPI audio devices on Windows.
+- **Confirmed Fix:** Enhanced `os_automation.py` with multi-platform handlers (`Calculator`, `Finder`/`File Explorer`, `TextEdit`/`Notepad`, `Terminal`) across Windows, macOS, and Linux; added `pyaudiowpatch` with `sys_platform == 'win32'` marker to `requirements.txt`; added `stt.listen()` string wrapper and `process_command(text)` in `main.py`.

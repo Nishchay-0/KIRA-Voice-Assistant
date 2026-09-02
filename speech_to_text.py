@@ -326,6 +326,13 @@ class KiraSTT:
             logging.warning(f"[KiraSTT] Speech recognition warning: {e}")
             return None
 
+    def listen(self, timeout: Optional[float] = None, phrase_time_limit: Optional[float] = None) -> Optional[str]:
+        """
+        Listen for a single spoken phrase and return recognized text string (with Hinglish conversion).
+        """
+        res = self.listen_once(timeout=timeout, phrase_time_limit=phrase_time_limit)
+        if res:
+            return res.get("hinglish") or res.get("original") or res.get("english")
         return None
 
     def listen_loop(self, callback: Callable[[str, str, str], None], stop_checker: Optional[Callable[[], bool]] = None):

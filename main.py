@@ -181,6 +181,21 @@ def process_user_input(original_text: str, hinglish_text: str, english_text: str
     return False
 
 
+def process_command(text: str) -> bool:
+    """
+    Process a single voice or text command string and return True to continue or False to exit.
+    """
+    if not text:
+        return True
+    tts = KiraTTS()
+    stt = KiraSTT()
+    from speech_to_text import devanagari_to_hinglish, translate_to_english
+    hinglish = devanagari_to_hinglish(text)
+    english = translate_to_english(text)
+    should_exit = process_user_input(text, hinglish, english, tts, stt)
+    return not should_exit
+
+
 def run_hands_free_kira():
     """
     Main Hands-Free Voice & Web Automation Engine Loop.

@@ -265,7 +265,17 @@ class KiraSTT:
 
     def _recognize_google(self, audio: sr.AudioData, lang: Optional[str] = None) -> str:
         target_lang = lang or self.input_language
-        return self.recognizer.recognize_google(audio, language=target_lang).lower()
+        try:
+            return self.recognizer.recognize_google(audio, language=target_lang).lower()
+        except sr.UnknownValueError:
+            # Auto fallback: if hi-IN fails, try en-IN then en-US
+            fallbacks = ["en-IN", "en-US"] if target_lang.startswith("hi") else ["hi-IN", "en-IN"]
+            for fb in fallbacks:
+                try:
+                    return self.recognizer.recognize_google(audio, language=fb).lower()
+                except (sr.UnknownValueError, sr.RequestError):
+                    continue
+            raise sr.UnknownValueError("Could not understand audio in any supported language.")
 
     def _recognize_whisper(self, audio: sr.AudioData) -> str:
         if not self.whisper_model:
@@ -292,13 +302,15 @@ class KiraSTT:
         self.reload_config()
         try:
             with sr.Microphone() as source:
+                print(Fore.YELLOW + "🎤 [Listening for speech...]", end="\r", flush=True)
                 audio = self.recognizer.listen(source, timeout=timeout, phrase_time_limit=phrase_time_limit)
+                print(Fore.GREEN + "⚡ [Processing speech...]", end="\r", flush=True)
 
                 recognized_text = ""
                 if self.engine == "google":
                     try:
                         recognized_text = self._recognize_google(audio)
-                    except sr.RequestError:
+                    except (sr.RequestError, sr.UnknownValueError):
                         if self.whisper_model:
                             recognized_text = self._recognize_whisper(audio)
                 elif self.engine == "whisper":
@@ -325,6 +337,7 @@ class KiraSTT:
         except Exception as e:
             logging.warning(f"[KiraSTT] Speech recognition warning: {e}")
             return None
+        return None
 
     def listen(self, timeout: Optional[float] = None, phrase_time_limit: Optional[float] = None) -> Optional[str]:
         """
@@ -337,12 +350,35 @@ class KiraSTT:
 
     def listen_loop(self, callback: Callable[[str, str, str], None], stop_checker: Optional[Callable[[], bool]] = None):
         """
-        Continuous listening loop: Preserves Roman Hinglish song names cleanly.
+        Continuous hybrid listening loop: Supports simultaneous voice recognition and terminal typing.
         """
+        import threading
+        
+        # Concurrent terminal input listener thread
+        def _keyboard_listener():
+            while True:
+                if stop_checker and stop_checker():
+                    break
+                try:
+                    typed = input().strip()
+                    if typed:
+                        hinglish = devanagari_to_hinglish(typed)
+                        english = translate_to_english(typed)
+                        callback(typed, hinglish, english)
+                        if typed.lower() in {"exit", "quit", "goodbye", "bye"}:
+                            break
+                except (EOFError, KeyboardInterrupt):
+                    break
+                except Exception:
+                    pass
+
+        kb_thread = threading.Thread(target=_keyboard_listener, daemon=True)
+        kb_thread.start()
+
         try:
             with sr.Microphone() as source:
                 self.calibrate(source, duration=1)
-                print(Fore.GREEN + f"\n=== Kira STT Active [Lang: '{self.input_language}'] (Press Ctrl+C to Stop) ===")
+                print(Fore.GREEN + f"\n=== Kira AI Active [Lang: '{self.input_language}'] (Speak into mic or type command) ===")
                 
                 while True:
                     if stop_checker and stop_checker():
@@ -350,13 +386,15 @@ class KiraSTT:
                     
                     self.reload_config()
                     try:
+                        print(Fore.CYAN + "🎤 [Listening for voice / type below] > ", end="", flush=True)
                         audio = self.recognizer.listen(source, timeout=None, phrase_time_limit=15)
+                        print(Fore.GREEN + "\r⚡ [Recognizing speech intent...]       ", flush=True)
                         
                         recognized_text = ""
                         if self.engine == "google":
                             try:
                                 recognized_text = self._recognize_google(audio)
-                            except sr.RequestError:
+                            except (sr.RequestError, sr.UnknownValueError):
                                 if self.whisper_model:
                                     recognized_text = self._recognize_whisper(audio)
                         elif self.engine == "whisper":
@@ -373,7 +411,7 @@ class KiraSTT:
                             hinglish_text = devanagari_to_hinglish(recognized_text)
                             translated_english = translate_to_english(recognized_text)
                             
-                            print("\r" + Fore.CYAN + f"[Spoken Speech Input]: {recognized_text}")
+                            print("\r" + Fore.CYAN + f"[Spoken Voice]: {recognized_text}")
                             if hinglish_text != recognized_text:
                                 print(Fore.LIGHTYELLOW_EX + f"[Hinglish]: {hinglish_text}")
                             
@@ -386,7 +424,7 @@ class KiraSTT:
                         break
 
         except Exception as e:
-            print(Fore.YELLOW + f"[KiraSTT] Audio device unavailable: {e}")
+            print(Fore.YELLOW + f"[KiraSTT] Microphone unavailable: {e}")
             print(Fore.CYAN + "[KiraSTT] Switching to typed commands. Type 'exit' to stop.")
             while True:
                 try:

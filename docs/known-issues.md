@@ -55,3 +55,24 @@ This document tracks identified bugs, reproduction steps, confirmed fixes, and o
   2. Implemented automatic cross-language recognition fallback in Google STT (`hi-IN` -> `en-IN` -> `en-US`).
   3. Added real-time visual terminal indicators (`🎤 [Listening...]`, `⚡ [Processing...]`).
   4. Added concurrent background keyboard listener thread so users can **both** speak and type commands in real-time.
+
+---
+
+### 7. Brittle Exact-Match Web Intent Engine
+- **Status:** FIXED
+- **Symptom:** Commands like `"open ytb"`, `"goggle"`, `"open fb"` failed silently because `web_automation.py` only matched exact known service names and literal regex patterns.
+- **Confirmed Fix:**
+  1. Created `intent_classifier.py` with structured intent classification and confidence scoring.
+  2. Rewrote `web_automation.py` with three-layer resolution: `PHONETIC_MAP` (STT mishearings) → `SERVICE_ALIASES` (abbreviations) → `difflib.get_close_matches` (typo tolerance).
+  3. Integrated into `main.py` via `IntentClassifier.classify()` before web dispatch.
+
+---
+
+### 8. No Persistent Memory / Personalization Across Sessions
+- **Status:** FIXED
+- **Symptom:** KIRA forgot user name, preferences, and learned facts every time it was restarted.
+- **Confirmed Fix:**
+  1. Created `kira_intelligence.py` with `KiraMemory` (SQLite `kira_memory.db`), `KiraSemantic` (ChromaDB vector search, optional), and `KiraBrain` orchestrator.
+  2. Integrated `get_brain()` singleton into `main.py` for name learning (`"my name is X"`), custom Q&A teaching (`"remember that X is Y"`), and knowledge base lookup.
+  3. Optional `ask_local_llm()` hook routes unknown queries to a locally installed Ollama model (e.g. `llama3.2:3b`).
+  4. Added personalization to all greetings and responses using stored `name` preference.

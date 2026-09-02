@@ -31,6 +31,7 @@ from youtube_engine import play_youtube_media, YouTubeEngine
 from smart_calculator import execute_smart_calculation
 from dependency_fixer import repair_plan_json
 from intent_classifier import IntentClassifier
+from kira_intelligence import get_brain, ask_local_llm
 
 
 def print_banner():
@@ -166,18 +167,66 @@ def process_user_input(original_text: str, hinglish_text: str, english_text: str
         tts.speak_auto(web_msg, wait=True)
         return False
 
-    # 5. Conversational Responses (When not a web command)
+    # 4. Check Persistent Memory & Teaching triggers
+    brain = get_brain()
+
+    # Check if user is teaching Kira their name or preferences
+    if any(k in clean_raw for k in ["my name is ", "mera naam ", "call me "]):
+        import re
+        name_match = re.search(r"(?:my name is|mera naam|call me)\s+([a-zA-Z0-9_-]+)", clean_raw, re.IGNORECASE)
+        if name_match:
+            user_name = name_match.group(1).strip().capitalize()
+            brain.remember("name", user_name)
+            msg = f"Nice to meet you, {user_name}! I have saved your name in memory."
+            print(Fore.GREEN + f"[Kira Memory]: {msg}")
+            tts.speak_auto(msg, wait=True)
+            return False
+
+    # Check if user is teaching Kira a new custom Q&A fact
+    if "remember that" in clean_raw or "teach" in clean_raw:
+        import re
+        teach_match = re.search(r"(?:remember that|teach(?: you)? that|remember)\s+(.+?)\s+(?:is|means|hoga)\s+(.+)", clean_raw, re.IGNORECASE)
+        if teach_match:
+            fact_q = teach_match.group(1).strip()
+            fact_a = teach_match.group(2).strip()
+            brain.teach(fact_q, fact_a)
+            msg = f"I learned that {fact_q} is {fact_a}."
+            print(Fore.GREEN + f"[Kira Knowledge]: {msg}")
+            tts.speak_auto(msg, wait=True)
+            return False
+
+    # 4b. Query Knowledge Base from SQLite Memory
+    knowledge_result = brain.understand(clean_raw)
+    if knowledge_result["intent"] == "knowledge" and knowledge_result.get("response"):
+        resp = knowledge_result["response"]
+        print(Fore.GREEN + f"[Kira Knowledge]: {resp}")
+        tts.speak_auto(resp, wait=True)
+        return False
+
+    # 5. Conversational Responses, Name Personalization & Local LLM Integration
+    stored_name = brain.memory.get_user_preference("name")
+    salutation = f", {stored_name}" if stored_name else " Sir"
+
     if any(k in combined_text for k in ["hello", "namaste", "hi", "नमस्ते"]):
-        response = "Namaste Sir! Main Kira hoon. Aap bataiye main aapki kya help kar sakti hoon?"
+        response = f"Namaste{salutation}! Main Kira hoon. Aap bataiye main aapki kya help kar sakti hoon?"
     elif any(k in combined_text for k in ["who are you", "kaun ho", "कौन"]):
         response = "Main Kira hoon, aapki AI voice assistant."
+    elif any(k in combined_text for k in ["what is my name", "mera naam kya hai", "who am i"]):
+        if stored_name:
+            response = f"Aapka naam {stored_name} hai."
+        else:
+            response = "Aapne mujhe apna naam nahi bataya. Aap 'my name is [name]' bolkar mujhe sikha sakte hain."
     elif any(k in combined_text for k in ["time", "samay", "waqt", "समय"]):
         current_time = time.strftime("%I:%M %p")
         response = f"Abhi time ho raha hai {current_time}."
     elif any(k in combined_text for k in ["weather", "mausam", "मौसम"]):
         response = "Aaj ka mausam saaf hai."
     else:
-        response = f"Aapne kaha: '{raw_text}'."
+        llm_reply = ask_local_llm(raw_text)
+        if llm_reply:
+            response = llm_reply
+        else:
+            response = f"Aapne kaha: '{raw_text}'."
 
     print(Fore.GREEN + f"[Kira Response]: {response}")
     tts.speak_auto(response, wait=True)

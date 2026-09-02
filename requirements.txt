@@ -8,3 +8,15 @@ mtranslate>=1.8
 openai-whisper>=20231117
 pydub>=0.25.1
 torch>=2.0.0
+
+# --- Intelligence Layer (Persistent Memory & Knowledge Base) ---
+# sqlite3 is built into Python — no install required
+
+# --- Semantic Understanding Layer (Optional, ~1 GB model download on first use) ---
+# Uncomment to enable ChromaDB vector search + sentence embedding:
+# chromadb>=0.4.0
+# sentence-transformers>=2.2.2
+
+# --- Local LLM Layer (Optional, requires Ollama installed on host) ---
+# Install Ollama from https://ollama.com then run: ollama pull llama3.2:3b
+# No pip package needed — uses subprocess call to ollama CLI

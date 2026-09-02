@@ -1,0 +1,40 @@
+# Docker Ignore File for KIRA Voice Assistant
+
+# Virtual Environments
+.venv/
+venv/
+env/
+ENV/
+
+# Python Bytecode and Cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE & Editor Settings
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Git & Repository Artifacts
+.git/
+.gitignore
+.agents/
+
+# Download artifacts & Error logs
+*_Error.txt
+speech.mp3
+audio_cache/
+
+# OS Specific files
+.DS_Store
+Thumbs.db
+
+# Documentation build / Local notes
+reports/final_tests/

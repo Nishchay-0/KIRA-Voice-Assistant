@@ -1,0 +1,58 @@
+services:
+  # 1. Main Interactive Voice Assistant Container (Live Audio & Mic Pass-Through)
+  kira:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: kira-voice-assistant:latest
+    container_name: kira-assistant
+    stdin_open: true
+    tty: true
+    devices:
+      - "/dev/snd:/dev/snd"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PULSE_SERVER=unix:/tmp/pulseaudio.socket
+      - LC_ALL=C.UTF-8
+      - LANG=C.UTF-8
+    volumes:
+      - .:/app
+      - kira-whisper-cache:/root/.cache/whisper
+      - /tmp/pulseaudio.socket:/tmp/pulseaudio.socket:ro
+    restart: unless-stopped
+    command: ["python", "main.py"]
+
+  # 2. Text / CLI Mode Container (Works without host audio devices, ideal for WSL2 / Cloud / Remote Servers)
+  kira-cli:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: kira-voice-assistant:latest
+    container_name: kira-cli
+    stdin_open: true
+    tty: true
+    environment:
+      - PYTHONUNBUFFERED=1
+      - LC_ALL=C.UTF-8
+      - LANG=C.UTF-8
+    volumes:
+      - .:/app
+      - kira-whisper-cache:/root/.cache/whisper
+    command: ["python", "main.py"]
+
+  # 3. Test & Verification Service
+  kira-test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: kira-voice-assistant:latest
+    container_name: kira-test
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - .:/app
+    command: ["python", "dependency_fixer.py", "--request", "status"]
+
+volumes:
+  kira-whisper-cache:
+    name: kira-whisper-cache

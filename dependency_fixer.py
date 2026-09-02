@@ -2,6 +2,7 @@
 
 import importlib.util
 import json
+import os
 import platform
 import re
 from typing import Any, Dict, List
@@ -13,10 +14,19 @@ DEPENDENCY_MODULES = {
     "torch": "torch",
     "openai-whisper": "whisper",
     "pyttsx3": "pyttsx3",
+    "edge-tts": "edge_tts",
+    "mtranslate": "mtranslate",
 }
 
 
+def _is_docker() -> bool:
+    """Check if currently running inside a Docker container."""
+    return os.path.exists("/.dockerenv") or os.environ.get("CONTAINER", "") == "docker"
+
+
 def _platform_name() -> str:
+    if _is_docker():
+        return "docker-linux"
     system = platform.system().lower()
     if system.startswith("win"):
         return "windows"
@@ -26,6 +36,11 @@ def _platform_name() -> str:
 
 
 def _base_commands(os_platform: str) -> List[str]:
+    if os_platform == "docker-linux":
+        return [
+            "pip install --upgrade pip",
+            "pip install -r requirements.txt",
+        ]
     if os_platform == "windows":
         return [
             "py -3.13 -m venv .venv",
@@ -41,17 +56,25 @@ def _base_commands(os_platform: str) -> List[str]:
 
 
 def _pyaudio_commands(os_platform: str) -> List[str]:
+    if os_platform == "docker-linux":
+        return [
+            "apt-get update && apt-get install -y portaudio19-dev python3-pyaudio",
+            "pip install PyAudio",
+        ]
     if os_platform == "windows":
         return [
-            "py -3.13 -m pip install pipwin",
-            "py -3.13 -m pipwin install pyaudio",
+            "py -3.13 -m venv .venv",
+            ".venv\\Scripts\\python.exe -m pip install --upgrade pip",
+            ".venv\\Scripts\\python.exe -m pip install PyAudio",
         ]
     if os_platform == "macos":
-        return ["brew install portaudio", "python -m pip install pyaudio"]
+        return ["brew install portaudio", "python3 -m venv .venv", "source .venv/bin/activate", "python -m pip install PyAudio"]
     return [
         "sudo apt-get update",
         "sudo apt-get install -y portaudio19-dev python3-pyaudio",
-        "python3 -m pip install pyaudio",
+        "python3 -m venv .venv",
+        "source .venv/bin/activate",
+        "python -m pip install PyAudio",
     ]
 
 
@@ -70,11 +93,17 @@ def repair_plan(error_text: str = "", request: str = "") -> Dict[str, Any]:
     if "pyaudio" in text or "portaudio" in text or "microphone" in text:
         commands.extend(_pyaudio_commands(os_platform))
     elif "torch" in text or "whisper" in text:
-        interpreter = "py -3.13" if os_platform == "windows" else "python3"
-        commands.extend([
-            f"{interpreter} -m pip install torch --index-url https://download.pytorch.org/whl/cpu",
-            f"{interpreter} -m pip install openai-whisper",
-        ])
+        if os_platform == "docker-linux":
+            commands.extend([
+                "pip install torch --index-url https://download.pytorch.org/whl/cpu",
+                "pip install openai-whisper",
+            ])
+        else:
+            interpreter = "py -3.13" if os_platform == "windows" else "python3"
+            commands.extend([
+                f"{interpreter} -m pip install torch --index-url https://download.pytorch.org/whl/cpu",
+                f"{interpreter} -m pip install openai-whisper",
+            ])
     elif "modulenotfounderror" in text or "importerror" in text or "missing" in text:
         commands.extend(_base_commands(os_platform))
     elif any(word in text for word in ("install everything", "fix environment")):

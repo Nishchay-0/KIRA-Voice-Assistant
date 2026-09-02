@@ -26,10 +26,11 @@ from speech_to_text import KiraSTT, load_wake_word, save_wake_word, translate_to
 from text_to_speech import KiraTTS, Speak, Speak_Auto
 from voice_manager import VoiceManager
 from os_automation import execute_os_command
-from web_automation import execute_web_command, WEB_SERVICES, normalize_hinglish_command
+from web_automation import execute_web_command, WEB_SERVICES, normalize_hinglish_command, fuzzy_match_service
 from youtube_engine import play_youtube_media, YouTubeEngine
 from smart_calculator import execute_smart_calculation
 from dependency_fixer import repair_plan_json
+from intent_classifier import IntentClassifier
 
 
 def print_banner():
@@ -124,34 +125,36 @@ def process_user_input(original_text: str, hinglish_text: str, english_text: str
         tts.speak_auto(calc_msg, wait=True)
         return False
 
-    # 2. Assistant Shutdown / Exit Triggers (Requires explicit Kira/Assistant termination phrases or standalone exit)
-    shutdown_phrases = [
-        "shutdown kira", "close kira", "stop kira", "exit kira", "goodbye kira", "bye kira",
-        "shutdown assistant", "close assistant", "stop assistant", "exit assistant", "goodbye assistant", "bye assistant"
-    ]
-    standalone_exits = ["exit", "quit", "goodbye", "bye"]
+    # 2. Classified Intent Routing (System, Play Media, Voice Settings)
+    classified = IntentClassifier.classify(clean_raw)
+    if classified["intent"] == "unknown" and clean_hinglish:
+        classified = IntentClassifier.classify(clean_hinglish)
+    if classified["intent"] == "unknown" and clean_english:
+        classified = IntentClassifier.classify(clean_english)
 
-    is_shutdown = any(p in combined_text for p in shutdown_phrases) or clean_raw in standalone_exits or clean_hinglish in standalone_exits or clean_english in standalone_exits
-
-    if is_shutdown:
+    if classified["intent"] == "system":
         msg = "Goodbye Sir! Stopping Kira Assistant."
         print(Fore.YELLOW + f"[Kira]: {msg}")
         tts.speak_auto(msg, wait=True)
         return True
 
-    # 3. Voice Manager Menu Trigger
-    if any(k in combined_text for k in ["voice manager", "change voice", "select voice", "voice settings", "voices"]):
-        print(Fore.GREEN + "\n>>> Opening Voice Manager...")
-        vm = VoiceManager()
-        vm.interactive_menu()
+    if classified["intent"] == "play_media":
+        song_query = classified.get("query") or clean_raw
+        print(Fore.GREEN + f"[Media Playback]: Playing '{song_query}' on YouTube...")
+        msg = play_youtube_media(song_query)
+        tts.speak_auto(msg, wait=True)
         return False
 
-    # 4. Wake Keyword Setup Trigger
-    if any(k in combined_text for k in ["set keyword", "wake word", "private password", "change keyword"]):
-        set_private_wake_keyword_menu()
+    if classified["intent"] == "voice_settings":
+        if any(k in combined_text for k in ["keyword", "wake word", "password"]):
+            set_private_wake_keyword_menu()
+        else:
+            print(Fore.GREEN + "\n>>> Opening Voice Manager...")
+            vm = VoiceManager()
+            vm.interactive_menu()
         return False
 
-    # 5. Try Web & Smart Media Automation Execution (Test Original / Hinglish text FIRST to preserve song titles!)
+    # 3. Try Intelligent Fuzzy Web & Media Execution (open ytb, go to you tube, open goggle, fb, etc.)
     is_web, web_msg = execute_web_command(clean_raw)
     if not is_web and clean_hinglish:
         is_web, web_msg = execute_web_command(clean_hinglish)

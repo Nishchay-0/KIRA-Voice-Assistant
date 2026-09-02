@@ -26,7 +26,8 @@
 | `speech_to_text.py` | Multi-engine voice recognition & Hinglish preservation | `KiraSTT` (`listen_loop()`, `listen_once()`), `devanagari_to_hinglish()`, `load_wake_word()` |
 | `text_to_speech.py` | Dual-engine neural & offline TTS audio playback | `KiraTTS` (`speak()`, `speak_auto()`), `Speak()`, `Speak_Auto()` |
 | `voice_manager.py` | Edge Neural TTS catalog & voice configuration | `VoiceManager` (`interactive_menu()`, `list_voices()`, `set_voice()`) |
-| `web_automation.py` | Instant web service dispatcher & browser automation | `execute_web_command()`, `WEB_SERVICES`, `normalize_hinglish_command()` |
+| `web_automation.py` | Intelligent browser dispatcher with fuzzy & phonetic matching | `execute_web_command()`, `fuzzy_match_service()`, `WEB_SERVICES` |
+| `intent_classifier.py` | Intelligent intent parsing, entity resolution & confidence scoring | `IntentClassifier.classify()`, `IntentClassifier.resolve_service()` |
 | `smart_calculator.py` | AST-based safe mathematical expression evaluator | `execute_smart_calculation()` |
 | `os_automation.py` | Cross-platform OS application & settings controls | `execute_os_command()` |
 | `youtube_engine.py` | Smart media & music streaming engine | `play_youtube_media()`, `YouTubeEngine` |

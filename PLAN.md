@@ -13,7 +13,8 @@ Implement and maintain the self-enforcing, enterprise-grade working agreement, p
 | **Web & Media Automation** | YouTube streaming engine, 1000+ top websites database, smart browser search dispatchers. | 2026-08-27 |
 | **AST Smart Calculator** | Safe mathematical expression parser & calculator with zero eval security risk. | 2026-08-27 |
 | **Docker Environment Adaptation** | Multi-platform Dockerfile, Docker Compose (`kira`, `kira-cli`, `kira-test`), ALSA/Pulse audio pass-through, and PowerShell/Bash runners. | `a0b7792` (2026-09-02) |
-| **Persistent Memory & Super Prompt** | Created `CLAUDE.md`, `PLAN.md`, `docs/known-issues.md`, `docs/constraints.md`, and `.env.example`. | Active |
+| **Persistent Memory & Super Prompt** | Created `CLAUDE.md`, `PLAN.md`, `docs/known-issues.md`, `docs/constraints.md`, and `.env.example`. | `d538ace` (2026-09-02) |
+| **Intelligent Intent & Fuzzy Matching** | Created `intent_classifier.py`, fuzzy typo-tolerant `web_automation.py`, and neural Edge-TTS playback. | Active (2026-09-03) |
 
 ---
 
